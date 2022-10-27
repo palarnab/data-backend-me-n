@@ -18,7 +18,6 @@ dotenv.config({ path: './config/config.env' });
 connectDB();
 
 // Route files
-const geocode = require('./routes/geocode');
 const bootcamps = require('./routes/bootcamps');
 const courses = require('./routes/courses');
 const auth = require('./routes/auth');
@@ -50,7 +49,6 @@ if (process.env.NODE_ENV === 'development') {
 app.use('/api/v1/auth', auth);
 app.use('/api/v1/bootcamps', bootcamps);
 app.use('/api/v1/courses', courses);
-app.use('/api/v1/locator', geocode);
 app.use(errorHandler);
 
 const port = process.env.PORT || 5000;
