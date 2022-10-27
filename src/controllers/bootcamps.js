@@ -22,6 +22,13 @@ exports.getBootcamp = asyncHandler(async (req, res, next) => {
 });
 
 exports.createBootcamp = asyncHandler(async (req, res, next) => {
+    req.body.user = req.user.id;
+
+    const publishedBootcamp = await Bootcamp.findOne({ user: req.user.id });
+    if (publishedBootcamp && req.user.role !== 'admin') {
+        next(new ErrorResponse(`The user with ID ${req.user.id} has already published`, 400));
+    }
+
     const bootcamp = await Bootcamp.create(req.body);
     res
         .status(201)
@@ -29,13 +36,20 @@ exports.createBootcamp = asyncHandler(async (req, res, next) => {
 });
 
 exports.updateBootcamp = asyncHandler(async (req, res, next) => {
-    const bootcamp = await Bootcamp.findByIdAndUpdate(req.params.id, req.body, {
+    let bootcamp = await Bootcamp.findById(req.params.id, req.body, {
         new: true,
         runValidators: true,
     });
     if (!bootcamp) {
         next(new ErrorResponse(`Cannot update bootcamp with id ${req.params.id}`, 400));
+    } else if (bootcamp.user.toString() !== req.user.id && req.user.role !== 'admin') {
+        next(new ErrorResponse(`User ${req.params.id} is not authorised`, 400));
     } else {
+        bootcamp = await Bootcamp.findByIdAndUpdate(req.params.id, req.body, {
+            new: true,
+            runValidators: true,
+        });
+
         res
             .status(200)
             .json({ success: true, data: bootcamp });   
@@ -43,11 +57,14 @@ exports.updateBootcamp = asyncHandler(async (req, res, next) => {
 });
 
 exports.deleteBootcamp = asyncHandler(async (req, res, next) => {
-    const bootcamp = await Bootcamp.findByIdAndDelete(req.params.id);
-    // use findById() and then remove() to invoke ascading delete on courses
+    const bootcamp = await Bootcamp.findById(req.params.id);
+
     if (!bootcamp) {
         next(new ErrorResponse(`Cannot delete bootcamp with id ${req.params.id}`, 400));
+    } else if (bootcamp.user.toString() !== req.user.id && req.user.role !== 'admin') {
+        next(new ErrorResponse(`User ${req.params.id} is not authorised`, 400));
     } else {
+        bootcamp.remove();
         res
             .status(200)
             .json({ success: true, data: {} });   
@@ -76,6 +93,8 @@ exports.uploadPhoto = asyncHandler(async (req, res, next) => {
     const bootcamp = await Bootcamp.findById(req.params.id);
     if (!bootcamp) {
         next(new ErrorResponse(`Cannot fine bootcamp with id ${req.params.id}`, 400));
+    } else if (bootcamp.user.toString() !== req.user.id && req.user.role !== 'admin') {
+        next(new ErrorResponse(`User ${req.params.id} is not authorised`, 400));
     } else {
         if (!req.files) {
             next(new ErrorResponse(`Please upload photo to bootcamp with id ${req.params.id}`, 400));
