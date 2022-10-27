@@ -8,6 +8,8 @@ const fileupload = require('express-fileupload');
 const connectDB = require('./config/db');
 const errorHandler = require('./middleware/error');
 const cors = require('cors');
+const swaggerUI = require('swagger-ui-express');
+const swaggerDocument = require('./swagger.json');
 
 // load config
 dotenv.config({ path: './config/config.env' });
@@ -22,9 +24,11 @@ const courses = require('./routes/courses');
 const auth = require('./routes/auth');
 
 const app = express();
+  
+app.use("/api-docs", swaggerUI.serve, swaggerUI.setup(swaggerDocument));
 
 app.use(cors({
-    origin: 'http://localhost:8889',
+    origin: process.env.KNOWN_ORIGINS,
     optionsSuccessStatus: 200 // For legacy browser support
 }));
 

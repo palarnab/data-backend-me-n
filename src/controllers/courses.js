@@ -34,12 +34,18 @@ exports.getCourse = asyncHandler(async (req, res, next) => {
 });
 
 exports.createCourse = asyncHandler(async (req, res, next) => {
-    const bootcamp = Bootcamp.findById(req.params.bootcampId);
+    const bootcamp = await Bootcamp.findById(req.params.bootcampId);
     if (!bootcamp) {
         return next(new ErrorResponse(`No bootcamps with id of ${req.params.bootcampId}`), 404);
     }
 
     req.body.bootcamp = req.params.bootcampId;
+    req.body.user = req.user.id;
+
+    if (bootcamp.user.toString() !== req.user.id && req.user.role !== 'admin') {
+        next(new ErrorResponse(`User ${req.user.id} is not authorised`, 400));
+    }
+
     const course = await Course.create(req.body);
     res
         .status(201)
@@ -53,6 +59,8 @@ exports.updateCourse = asyncHandler(async (req, res, next) => {
     });
     if (!course) {
         next(new ErrorResponse(`Cannot update course with id ${req.params.id}`, 400));
+    } else if (course.user.toString() !== req.user.id && req.user.role !== 'admin') {
+        next(new ErrorResponse(`User ${req.user.id} is not authorised`, 400));
     } else {
         res
             .status(200)
@@ -64,6 +72,8 @@ exports.deleteCourse = asyncHandler(async (req, res, next) => {
     const course = await Course.findById(req.params.id);
     if (!course) {
         next(new ErrorResponse(`Cannot delete course with id ${req.params.id}`, 400));
+    } else if (course.user.toString() !== req.user.id && req.user.role !== 'admin') {
+        next(new ErrorResponse(`User ${req.user.id} is not authorised`, 400));
     } else {
         await course.remove();
         res
